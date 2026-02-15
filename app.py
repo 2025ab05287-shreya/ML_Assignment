@@ -4,6 +4,7 @@ import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -19,18 +20,22 @@ st.set_page_config(page_title="Adult Income Classification", layout="wide")
 st.title("Adult Income Classification - ML Models")
 st.write("Upload test dataset and select a model for evaluation.")
 
-# Load models
+# Get base directory (works on Streamlit Cloud)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.join(BASE_DIR, "model")
+
+# Load models safely
 models = {
-    "Logistic Regression": joblib.load("models/logistic.pkl"),
-    "Decision Tree": joblib.load("models/decision_tree.pkl"),
-    "KNN": joblib.load("models/knn.pkl"),
-    "Naive Bayes": joblib.load("models/naive_bayes.pkl"),
-    "Random Forest": joblib.load("models/random_forest.pkl"),
-    "XGBoost": joblib.load("models/xgboost.pkl")
+    "Logistic Regression": joblib.load(os.path.join(MODEL_DIR, "logistic.pkl")),
+    "Decision Tree": joblib.load(os.path.join(MODEL_DIR, "decision_tree.pkl")),
+    "KNN": joblib.load(os.path.join(MODEL_DIR, "knn.pkl")),
+    "Naive Bayes": joblib.load(os.path.join(MODEL_DIR, "naive_bayes.pkl")),
+    "Random Forest": joblib.load(os.path.join(MODEL_DIR, "random_forest.pkl")),
+    "XGBoost": joblib.load(os.path.join(MODEL_DIR, "xgboost.pkl"))
 }
 
-scaler = joblib.load("models/scaler.pkl")
-trained_columns = joblib.load("models/columns.pkl")
+scaler = joblib.load(os.path.join(MODEL_DIR, "scaler.pkl"))
+trained_columns = joblib.load(os.path.join(MODEL_DIR, "columns.pkl"))
 
 model_name = st.selectbox("Select Model", list(models.keys()))
 model = models[model_name]
@@ -57,6 +62,7 @@ if uploaded_file is not None:
 
     X = pd.get_dummies(X, drop_first=True)
 
+    # Align columns with training
     for col in trained_columns:
         if col not in X:
             X[col] = 0
@@ -67,6 +73,7 @@ if uploaded_file is not None:
 
     y_pred = model.predict(X_scaled)
 
+    # Handle AUC only if predict_proba exists
     if hasattr(model, "predict_proba"):
         y_prob = model.predict_proba(X_scaled)[:, 1]
         auc = roc_auc_score(y, y_prob)
